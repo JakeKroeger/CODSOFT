@@ -246,7 +246,7 @@ class _ToDoItemState extends State<ToDoItem> {
                 ),
 
                 // ---------------------Subtasks---------------------
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 5.0),
                   child: Row(),
                 ),
