@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qute/models/quote.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 
 class QuoteItem extends StatefulWidget {
   final Quote quote;
@@ -43,6 +44,12 @@ class _QuoteItemState extends State<QuoteItem> {
                     color: Color(0xFFECECEC)),
               ),
               Spacer(),
+              IconButton(
+                  onPressed: () {
+                    Share.share(
+                        '${widget.quote.quote} - ${widget.quote.author}');
+                  },
+                  icon: Icon(Icons.share)),
               IconButton(
                 onPressed: () {
                   widget.favoriteDeleted();
