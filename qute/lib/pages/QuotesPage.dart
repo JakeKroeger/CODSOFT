@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:qute/models/quote.dart'; 
+import 'package:qute/models/quote.dart';
 import 'package:qute/services/quote_service.dart';
 import 'package:qute/pages/FavoritesPage.dart';
 import 'dart:async';
-
-import 'package:qute/services/quote_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:share_plus/share_plus.dart';
 
 class QuotesPage extends StatefulWidget {
   @override
@@ -14,17 +15,60 @@ class QuotesPage extends StatefulWidget {
 
 class _QuotesPageState extends State<QuotesPage> {
   late Future<Quote> futureQuote;
+  List<Quote> favQuotes = [];
 
   @override
   void initState() {
     super.initState();
-    futureQuote = QuoteService().fetchQuote()
+    futureQuote = QuoteService().fetchQuote();
   }
 
   void _refreshQuote() {
     setState(() {
       futureQuote = QuoteService().fetchQuote();
     });
+  }
+
+  Future<void> _saveFavorites(List<Quote> favoriteQuotes) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = favoriteQuotes.map((quote) => quote.toJson()).toList();
+    final jsonString = jsonEncode(jsonList);
+    await prefs.setString('favoriteQuotes', jsonString);
+  }
+
+  void _handleFavorite(Quote quote) {
+    setState(() {
+      quote.isFavorite = !quote.isFavorite;
+      if (quote.isFavorite) {
+        favQuotes.add(quote);
+      } else {
+        favQuotes.remove(quote);
+      }
+      _saveFavorites(favQuotes);
+    });
+  }
+
+  void _navigateToFavorites() async {
+    final updatedFavorites = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FavoritesPage(
+          favoriteQuotes: favQuotes,
+          onUnfavorite: (Quote quote) {
+            setState(() {
+              // Update the main page state with the unfavorited quote
+              quote.isFavorite = false;
+            });
+          },
+        ),
+      ),
+    );
+
+    if (updatedFavorites != null) {
+      setState(() {
+        favQuotes = updatedFavorites;
+      });
+    }
   }
 
   @override
@@ -39,29 +83,23 @@ class _QuotesPageState extends State<QuotesPage> {
             top: 16,
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'Quotes Application',
-                style: GoogleFonts.oswald(
-                    fontSize: 30.0,
+                style: GoogleFonts.chakraPetch(
+                    fontSize: 20.0,
                     fontWeight: FontWeight.w400,
                     color: Color(0xFFECECEC)),
               ),
+              Spacer(),
               TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            favoritePage()), // Use your favorite page widget here
-                  );
-                },
+                onPressed: _navigateToFavorites,
                 child: Text(
                   'Favorites',
-                  style: GoogleFonts.oswald(
-                      fontSize: 20.0,
+                  style: GoogleFonts.chakraPetch(
+                      fontSize: 15.0,
                       fontWeight: FontWeight.w400,
                       color: Colors.grey[500]), // Light grey color
                 ),
@@ -85,14 +123,11 @@ class _QuotesPageState extends State<QuotesPage> {
             } else {
               Quote quote = snapshot.data!;
               return Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Wrap(
                   alignment: WrapAlignment.center,
-                  spacing: 10.0, // Space between items in the wrap
-                  runSpacing: 10.0, // Space between rows in the wrap
                   children: [
                     Container(
-                      padding: EdgeInsets.all(20.0),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFF2D2E35), Color(0xFF383941)],
@@ -100,37 +135,45 @@ class _QuotesPageState extends State<QuotesPage> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius:
-                            BorderRadius.circular(20), // Rounded corners
+                            BorderRadius.circular(0), // Rounded corners
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Text(
-                            '"${quote.quote}"',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.oswald(
-                                fontSize: 35.0,
-                                fontWeight: FontWeight.w300,
-                                color: Color(0xFFECECEC)),
+                          //-------------------QUOTE-----------------------
+                          SizedBox(height: 50.0),
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                right: 30.0, left: 30, top: 30),
+                            child: Text(
+                              '"${quote.quote}"',
+                              textAlign: TextAlign.justify,
+                              style: GoogleFonts.chakraPetch(
+                                  fontSize: 25.0,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFFECECEC)),
+                            ),
                           ),
-                          const SizedBox(
-                              height: 20), // Space between quote and author
+                          // Space between quote and author
+                          //-----------------Author--------------------
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              Text(
-                                '- ${quote.author}',
-                                style: GoogleFonts.oswald(
-                                    fontSize: 20.0,
-                                    fontWeight: FontWeight.w100,
-                                    color: Color(0xFFECECEC)),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(right: 30, top: 10),
+                                child: Text(
+                                  '~${quote.author}',
+                                  style: GoogleFonts.chakraPetch(
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w100,
+                                      color: Color(0xFFECECEC)),
+                                ),
                               ),
-                              const SizedBox(width: 20.0),
                             ],
                           ),
 
-                          const SizedBox(
-                              height: 20.0), // Space before the button
+                          //-------------------Button---------------------
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -141,16 +184,30 @@ class _QuotesPageState extends State<QuotesPage> {
                                   // Action to perform on tap
                                   _refreshQuote(); // Replace with your refresh method
                                 },
-                                color: Colors.black54, // Customize icon color
+                                color: Colors.grey[700], // Customize icon color
                               ),
-                              const SizedBox(height: 10.0),
                               IconButton(
                                 icon: Icon(Icons.share),
-                                onPressed: () {},
-                                color: Colors.black54,
+                                onPressed: () {
+                                  Share.share(
+                                      '${quote.quote} - ${quote.author}');
+                                },
+                                color: Colors.grey[700],
                               ),
+                              IconButton(
+                                onPressed: () {
+                                  _handleFavorite(quote);
+                                },
+                                icon: Icon(quote.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border),
+                                color: Colors.grey[700],
+                              )
                             ],
                           ),
+                          SizedBox(
+                            height: 10,
+                          )
                         ],
                       ),
                     ),
