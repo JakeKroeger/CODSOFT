@@ -7,8 +7,7 @@ import 'dart:convert';
 
 class FavoritesPage extends StatefulWidget {
   final List<Quote> favoriteQuotes;
-  final Function(Quote)
-      onUnfavorite; // Callback to update the quote on the main page
+  final Function(Quote) onUnfavorite;
 
   FavoritesPage({required this.favoriteQuotes, required this.onUnfavorite});
 
@@ -20,19 +19,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   void initState() {
     super.initState();
-    // Load favorites when the page is initialized
     _loadFavorites();
   }
 
-  // Save favorites to SharedPreferences
-  Future<void> _saveFavorites(List<Quote> favoriteQuotes) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = favoriteQuotes.map((quote) => quote.toJson()).toList();
-    final jsonString = jsonEncode(jsonList);
-    await prefs.setString('favoriteQuotes', jsonString);
-  }
-
-  // Load favorites from SharedPreferences
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString('favoriteQuotes');
@@ -47,13 +36,20 @@ class _FavoritesPageState extends State<FavoritesPage> {
     }
   }
 
-  void _handleFavorite(Quote quote) {
+  Future<void> _saveFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList =
+        widget.favoriteQuotes.map((quote) => quote.toJson()).toList();
+    final jsonString = jsonEncode(jsonList);
+    await prefs.setString('favoriteQuotes', jsonString);
+  }
+
+  void _handleUnfavorite(Quote quote) {
     setState(() {
-      widget.favoriteQuotes.remove(quote);
-      quote.isFavorite = false;
-      _saveFavorites(widget.favoriteQuotes); // Save changes
+      widget.favoriteQuotes.removeWhere((q) => q.quote == quote.quote);
+      _saveFavorites();
     });
-    widget.onUnfavorite(quote);
+    widget.onUnfavorite(quote); // Notify the parent
   }
 
   @override
@@ -77,15 +73,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(0), // Rounded corners
         ),
         child: ListView.builder(
           itemCount: widget.favoriteQuotes.length,
           itemBuilder: (context, index) {
+            final quote = widget.favoriteQuotes[index];
             return QuoteItem(
-              quote: widget.favoriteQuotes[index],
-              favoriteDeleted: () =>
-                  _handleFavorite(widget.favoriteQuotes[index]),
+              quote: quote,
+              favoriteDeleted: () => _handleUnfavorite(quote),
             );
           },
         ),

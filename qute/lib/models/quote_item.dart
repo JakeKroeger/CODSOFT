@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'quote.dart';
+import 'package:qute/models/quote.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class QuoteItem extends StatefulWidget {
@@ -21,16 +21,18 @@ class _QuoteItemState extends State<QuoteItem> {
         padding: EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: Color(0xFF1C1D21),
-          borderRadius: BorderRadius.circular(10), // Rounded corners
+          borderRadius: BorderRadius.circular(10),
         ),
         margin: EdgeInsets.only(bottom: 5),
         child: ListTile(
-          title: Text(widget.quote.quote,
-              textAlign: TextAlign.justify,
-              style: GoogleFonts.chakraPetch(
-                  fontSize: 20.0,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFFECECEC))),
+          title: Text(
+            widget.quote.quote,
+            textAlign: TextAlign.justify,
+            style: GoogleFonts.chakraPetch(
+                fontSize: 20.0,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFECECEC)),
+          ),
           subtitle: Row(
             children: [
               Text(
@@ -43,7 +45,6 @@ class _QuoteItemState extends State<QuoteItem> {
               Spacer(),
               IconButton(
                 onPressed: () {
-                  // Call the callback to remove the quote from favorites
                   widget.favoriteDeleted();
                 },
                 icon: Icon(

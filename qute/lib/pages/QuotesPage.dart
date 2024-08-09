@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:qute/models/quote.dart';
 import 'package:qute/services/quote_service.dart';
-import 'package:qute/pages/FavoritesPage.dart';
-import 'dart:async';
+import 'FavoritesPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
@@ -21,6 +20,7 @@ class _QuotesPageState extends State<QuotesPage> {
   void initState() {
     super.initState();
     futureQuote = QuoteService().fetchQuote();
+    _loadFavorites();
   }
 
   void _refreshQuote() {
@@ -29,46 +29,53 @@ class _QuotesPageState extends State<QuotesPage> {
     });
   }
 
-  Future<void> _saveFavorites(List<Quote> favoriteQuotes) async {
+  Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
-    final jsonList = favoriteQuotes.map((quote) => quote.toJson()).toList();
+    final jsonString = prefs.getString('favoriteQuotes');
+    if (jsonString != null) {
+      final jsonList = jsonDecode(jsonString) as List;
+      setState(() {
+        favQuotes = jsonList.map((json) => Quote.fromJson(json)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = favQuotes.map((quote) => quote.toJson()).toList();
     final jsonString = jsonEncode(jsonList);
     await prefs.setString('favoriteQuotes', jsonString);
   }
 
   void _handleFavorite(Quote quote) {
     setState(() {
-      quote.isFavorite = !quote.isFavorite;
-      if (quote.isFavorite) {
+      if (!favQuotes.any((q) => q.quote == quote.quote)) {
         favQuotes.add(quote);
       } else {
-        favQuotes.remove(quote);
+        favQuotes.removeWhere((q) => q.quote == quote.quote);
       }
-      _saveFavorites(favQuotes);
+      _saveFavorites();
     });
   }
 
   void _navigateToFavorites() async {
-    final updatedFavorites = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => FavoritesPage(
           favoriteQuotes: favQuotes,
-          onUnfavorite: (Quote quote) {
+          onUnfavorite: (quote) {
             setState(() {
-              // Update the main page state with the unfavorited quote
-              quote.isFavorite = false;
+              favQuotes.removeWhere((q) => q.quote == quote.quote);
+              _saveFavorites();
             });
           },
         ),
       ),
     );
+    // Reload favorites after returning to the QuotesPage
 
-    if (updatedFavorites != null) {
-      setState(() {
-        favQuotes = updatedFavorites;
-      });
-    }
+    _loadFavorites();
   }
 
   @override
@@ -79,9 +86,7 @@ class _QuotesPageState extends State<QuotesPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Padding(
-          padding: const EdgeInsets.only(
-            top: 16,
-          ),
+          padding: const EdgeInsets.only(top: 16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -101,15 +106,14 @@ class _QuotesPageState extends State<QuotesPage> {
                   style: GoogleFonts.chakraPetch(
                       fontSize: 15.0,
                       fontWeight: FontWeight.w400,
-                      color: Colors.grey[500]), // Light grey color
+                      color: Colors.grey[500]),
                 ),
               ),
             ],
           ),
         ),
       ),
-
-      extendBodyBehindAppBar: true, // Extend body behind the AppBar
+      extendBodyBehindAppBar: true,
       body: Center(
         child: FutureBuilder<Quote>(
           future: futureQuote,
@@ -134,13 +138,11 @@ class _QuotesPageState extends State<QuotesPage> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(0), // Rounded corners
+                        borderRadius: BorderRadius.circular(0),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          //-------------------QUOTE-----------------------
                           SizedBox(height: 50.0),
                           Padding(
                             padding: const EdgeInsets.only(
@@ -154,8 +156,6 @@ class _QuotesPageState extends State<QuotesPage> {
                                   color: Color(0xFFECECEC)),
                             ),
                           ),
-                          // Space between quote and author
-                          //-----------------Author--------------------
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -172,19 +172,13 @@ class _QuotesPageState extends State<QuotesPage> {
                               ),
                             ],
                           ),
-
-                          //-------------------Button---------------------
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               IconButton(
-                                icon: Icon(
-                                    Icons.refresh), // Using the refresh icon
-                                onPressed: () {
-                                  // Action to perform on tap
-                                  _refreshQuote(); // Replace with your refresh method
-                                },
-                                color: Colors.grey[700], // Customize icon color
+                                icon: Icon(Icons.refresh),
+                                onPressed: _refreshQuote,
+                                color: Colors.grey[700],
                               ),
                               IconButton(
                                 icon: Icon(Icons.share),
@@ -196,18 +190,20 @@ class _QuotesPageState extends State<QuotesPage> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  _handleFavorite(quote);
+                                  setState(() {
+                                    quote.isFavorite = true;
+                                    _handleFavorite(quote);
+                                  });
                                 },
-                                icon: Icon(quote.isFavorite
-                                    ? Icons.favorite
-                                    : Icons.favorite_border),
+                                icon: Icon(
+                                    favQuotes.any((q) => q.quote == quote.quote)
+                                        ? Icons.favorite
+                                        : Icons.favorite_border),
                                 color: Colors.grey[700],
-                              )
+                              ),
                             ],
                           ),
-                          SizedBox(
-                            height: 10,
-                          )
+                          SizedBox(height: 10),
                         ],
                       ),
                     ),
