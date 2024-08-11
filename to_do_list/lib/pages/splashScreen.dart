@@ -65,7 +65,7 @@ class splashScreen extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, '/home');
               },
               style: ElevatedButton.styleFrom(
-                primary: Colors.red[200], // Set background color
+                backgroundColor: Colors.red[200], // Set background color
                 padding: const EdgeInsets.symmetric(
                     horizontal: 30, vertical: 15), // Add padding to button
                 textStyle: GoogleFonts.poppins(
