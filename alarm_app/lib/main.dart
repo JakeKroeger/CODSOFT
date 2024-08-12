@@ -1,7 +1,6 @@
 // lib/main.dart
 import 'package:alarm_app/pages/homepage.dart';
 import 'package:flutter/material.dart';
-import 'models/clockpainter.dart';
 
 void main() {
   runApp(MyApp());

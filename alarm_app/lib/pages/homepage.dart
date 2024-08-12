@@ -1,6 +1,8 @@
 import 'package:alarm_app/models/alarm_tile.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:alarm_app/models/clockpainter.dart';
+import 'package:flutter_spinner_time_picker/flutter_spinner_time_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:alarm_app/models/alarm.dart';
 
@@ -14,14 +16,26 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   List<Alarm> alarms = [];
 
-  void _addAlarm(DateTime time, String label) {
+  void _addAlarm(TimeOfDay time, String label) {
     setState(() {
       alarms.add(Alarm(time: time, label: label));
+      alarms.sort((a, b) {
+        // First, compare by hour
+        int hourComparison = a.time.hour.compareTo(b.time.hour);
+
+        // If hours are the same, compare by minute
+        if (hourComparison == 0) {
+          return a.time.minute.compareTo(b.time.minute);
+        }
+
+        // Otherwise, return the hour comparison result
+        return hourComparison;
+      });
     });
   }
 
   void _showAddAlarmDialog() {
-    DateTime selectedTime = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
     String label = '';
 
     showModalBottomSheet(
@@ -41,34 +55,50 @@ class _HomepageState extends State<Homepage> {
                   children: [
                     Text(
                       'Add Alarm',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.paytoneOne(
+                          textStyle: TextStyle(fontSize: 24)),
                     ),
                     SizedBox(height: 16),
                     TextField(
-                      decoration: InputDecoration(labelText: 'Label'),
+                      decoration: InputDecoration(
+                          labelText: 'Label',
+                          labelStyle: GoogleFonts.paytoneOne()),
                       onChanged: (value) {
                         label = value;
                       },
                     ),
                     SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
+                    GestureDetector(
+                      onTap: () async {
+                        final TimeOfDay? picked = await showSpinnerTimePicker(
+                          context,
+                          initTime: selectedTime,
+                          is24HourFormat: false,
                         );
                         if (picked != null) {
-                          selectedTime = DateTime(
-                            selectedTime.year,
-                            selectedTime.month,
-                            selectedTime.day,
-                            picked.hour,
-                            picked.minute,
-                          );
+                          setState(() {
+                            selectedTime = picked;
+                          });
                         }
                       },
-                      child: Text('Select Time'),
+                      child: Container(
+                        padding:
+                            EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Select Time',
+                          style: GoogleFonts.paytoneOne(
+                            textStyle: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     SizedBox(height: 16),
                     Row(
@@ -78,14 +108,29 @@ class _HomepageState extends State<Homepage> {
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
-                          child: Text('Cancel'),
+                          child: Text('Cancel',
+                              style: GoogleFonts.paytoneOne(
+                                  textStyle: TextStyle(
+                                color: Colors.black,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w400,
+                              ))),
                         ),
                         TextButton(
                           onPressed: () {
                             _addAlarm(selectedTime, label);
                             Navigator.of(context).pop();
                           },
-                          child: Text('Add'),
+                          child: Text(
+                            'Add',
+                            style: GoogleFonts.paytoneOne(
+                              textStyle: TextStyle(
+                                color: Colors.black,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
