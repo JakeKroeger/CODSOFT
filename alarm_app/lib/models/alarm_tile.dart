@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AlarmTile extends StatefulWidget {
   final TimeOfDay time;
@@ -16,19 +15,6 @@ class AlarmTile extends StatefulWidget {
 }
 
 class _AlarmTileState extends State<AlarmTile> {
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  Future<void> initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('app_icon');
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
   bool isSwitched = false;
   void toggleSwitch() {
     if (isSwitched == false) {
