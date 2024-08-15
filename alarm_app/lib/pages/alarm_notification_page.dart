@@ -1,22 +1,18 @@
-import 'package:alarm/alarm.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:alarm/alarm.dart' as alarmPlugin;
 
-class AlarmNotificationPage extends StatefulWidget {
+class AlarmNotificationPage extends StatelessWidget {
   final String label;
-  final AlarmSettings alarmSettings;
+  final alarmPlugin.AlarmSettings alarmSettings;
+  final TimeOfDay time;
 
   AlarmNotificationPage({
     required this.label,
     required this.alarmSettings,
+    required this.time,
   });
-
-  @override
-  State<AlarmNotificationPage> createState() => _AlarmNotificationPageState();
-}
-
-class _AlarmNotificationPageState extends State<AlarmNotificationPage> {
-  int snoozetimes = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +24,7 @@ class _AlarmNotificationPageState extends State<AlarmNotificationPage> {
           children: [
             // Notification title
             Text(
-              widget.alarmSettings.notificationTitle,
+              alarmSettings.notificationTitle,
               style: GoogleFonts.mulish(
                 textStyle: TextStyle(
                   color: Colors.white,
@@ -41,7 +37,7 @@ class _AlarmNotificationPageState extends State<AlarmNotificationPage> {
 
             // Alarm label
             Text(
-              widget.alarmSettings.notificationBody,
+              alarmSettings.notificationBody,
               style: GoogleFonts.mulish(
                 textStyle: TextStyle(
                   color: Colors.white,
@@ -58,7 +54,25 @@ class _AlarmNotificationPageState extends State<AlarmNotificationPage> {
                 // Dismiss button
                 ElevatedButton(
                   onPressed: () {
-                    Alarm.stop(widget.alarmSettings.id);
+                    // Stop the snooze alarm
+                    alarmPlugin.Alarm.stop(alarmSettings.id);
+                    final now = DateTime.now();
+
+                    DateTime alarmTime = DateTime(
+                      now.year,
+                      now.month,
+                      now.day,
+                      time.hour,
+                      time.minute,
+                    );
+                    // Reset the original alarm to ring daily
+                    alarmPlugin.Alarm.set(
+                      alarmSettings: alarmSettings.copyWith(
+                        id: label.hashCode,
+                        dateTime: alarmTime.add(Duration(days: 1)),
+                      ),
+                    );
+
                     Navigator.of(context).pop();
                   },
                   child: Text('Dismiss'),
@@ -68,23 +82,24 @@ class _AlarmNotificationPageState extends State<AlarmNotificationPage> {
                 // Snooze button
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      snoozetimes++;
-                    });
-                    print('Snooze pressed $snoozetimes times');
+                    final snoozeDuration = Duration(seconds: 5);
+                    final now = DateTime.now();
 
-                    // Calculate snooze duration (e.g., 5 minutes)
-                    final snoozeDuration = Duration(minutes: 5);
+                    // Stop the current alarm
+                    alarmPlugin.Alarm.stop(alarmSettings.id);
 
-                    // Schedule the alarm to ring again after the snooze duration
-                    Alarm.stop(widget.alarmSettings.id);
-                    Navigator.of(context).pop();
-                    Alarm.set(
-                      alarmSettings: widget.alarmSettings.copyWith(
-                        dateTime:
-                            widget.alarmSettings.dateTime.add(snoozeDuration),
+                    // Set the original alarm for the next day
+
+                    // Schedule the snooze alarm for 5 minutes later
+                    alarmPlugin.Alarm.set(
+                      alarmSettings: alarmSettings.copyWith(
+                        id: alarmSettings.id +
+                            1, // Use a different ID for snooze
+                        dateTime: now.add(snoozeDuration),
                       ),
                     );
+
+                    Navigator.of(context).pop();
                   },
                   child: Text('Snooze'),
                 ),

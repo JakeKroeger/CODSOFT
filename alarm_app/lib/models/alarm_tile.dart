@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:io';
 import 'package:alarm/alarm.dart';
 import 'package:alarm_app/pages/alarm_notification_page.dart';
@@ -10,10 +9,14 @@ import 'package:timezone/data/latest.dart' as tz;
 class AlarmTile extends StatefulWidget {
   final TimeOfDay time;
   final String label;
+  final bool isSwitched;
+  final Function(bool) onSwitchChanged;
 
   AlarmTile({
     required this.time,
     required this.label,
+    required this.isSwitched,
+    required this.onSwitchChanged,
   });
 
   @override
@@ -21,13 +24,24 @@ class AlarmTile extends StatefulWidget {
 }
 
 class _AlarmTileState extends State<AlarmTile> {
-  bool isSwitched = false;
+  late bool isSwitched;
   static StreamSubscription<AlarmSettings>? subscription;
 
   @override
   void initState() {
     super.initState();
+    isSwitched = widget.isSwitched;
     _initializeTimezone();
+    // Move subscription initialization to didChangeDependencies
+    // subscription ??= Alarm.ringStream.stream.listen(
+    //   (alarmSettings) => yourOnRingCallback(alarmSettings),
+    // );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize the subscription here, after context is available
     subscription ??= Alarm.ringStream.stream.listen(
       (alarmSettings) => yourOnRingCallback(alarmSettings),
     );
@@ -37,16 +51,13 @@ class _AlarmTileState extends State<AlarmTile> {
   void _checkAlarms() async {
     if (isSwitched) {
       await _setAlarm();
-      print("Alarm set checked for ${widget.label} at ${widget.time}");
     } else {
       await _cancelAlarm();
-      print("Alarm cancelled checked for ${widget.label} at ${widget.time}");
     }
   }
 
   void _initializeTimezone() {
     tz.initializeTimeZones();
-    print("Timezone initialized.");
   }
 
   @override
@@ -61,6 +72,7 @@ class _AlarmTileState extends State<AlarmTile> {
         builder: (context) => AlarmNotificationPage(
           label: widget.label,
           alarmSettings: alarmsettings,
+          time: widget.time,
         ),
       ),
     );
@@ -104,7 +116,6 @@ class _AlarmTileState extends State<AlarmTile> {
     final alarmId = widget.label.hashCode;
     try {
       await Alarm.stop(alarmId);
-      print("Alarm cancelled for ${widget.label} at ${widget.time}");
     } catch (e) {
       print("Error cancelling alarm: $e");
     }
@@ -120,6 +131,8 @@ class _AlarmTileState extends State<AlarmTile> {
     } else {
       _cancelAlarm();
     }
+
+    widget.onSwitchChanged(isSwitched);
   }
 
   @override
@@ -150,9 +163,7 @@ class _AlarmTileState extends State<AlarmTile> {
           onChanged: (value) => toggleSwitch(),
           activeTrackColor: Colors.green,
           activeColor: Colors.white,
-          inactiveThumbColor:
-              Colors.grey, // Set the inactive thumb color to white
-          // Set the active thumb color to white
+          inactiveThumbColor: Colors.grey,
         ),
       ),
     );
