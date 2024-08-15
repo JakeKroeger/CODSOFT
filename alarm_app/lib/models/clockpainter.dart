@@ -19,16 +19,15 @@ class ClockPainter extends CustomPainter {
 
     final paintFaceShadow = Paint()
       ..color =
-          Colors.black.withOpacity(0.4) // Shadow color with some transparency
-      ..style = PaintingStyle.fill
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6); // Soften the shadow
+          Colors.grey.withOpacity(0.4) // Shadow color with some transparency
+      ..style = PaintingStyle.fill;
 
     // Draw shadow behind clock face
-    final shadowRadius = radius * 1.1; // Slightly larger radius for shadow
+    final shadowRadius = radius * 1.02; // Slightly larger radius for shadow
     canvas.drawCircle(Offset(centerX, centerY), shadowRadius, paintFaceShadow);
 
     final paintFace = Paint()
-      ..color = Colors.black
+      ..color = Color(0xff171717)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(Offset(centerX, centerY), radius, paintFace);
@@ -67,7 +66,7 @@ class ClockPainter extends CustomPainter {
         Offset(secondHandX, secondHandY),
         paintHands
           ..strokeWidth = 2
-          ..color = Colors.purple);
+          ..color = Colors.red);
 
     // Draw clock numbers
     final textStyle = GoogleFonts.poppins(
