@@ -56,6 +56,7 @@ class _HomepageState extends State<Homepage> {
         time: alarms[index].time,
         label: alarms[index].label,
         isSwitched: isSwitched,
+        tune: alarms[index].tune,
       );
       if (isSwitched) {
         _setAlarm(alarms[index]);
@@ -93,7 +94,7 @@ class _HomepageState extends State<Homepage> {
     final alarmSettings = alarmPlugin.AlarmSettings(
       id: alarmId,
       dateTime: alarmTime,
-      assetAudioPath: 'assets/Clock2.mp3',
+      assetAudioPath: 'assets/${alarm.tune}',
       loopAudio: true,
       vibrate: true,
       volume: 0.8,
@@ -123,7 +124,8 @@ class _HomepageState extends State<Homepage> {
     }
 
     setState(() {
-      alarms.add(Alarm(time: time, label: label, isSwitched: false));
+      alarms
+          .add(Alarm(time: time, label: label, isSwitched: false, tune: tune));
       alarms.sort((a, b) {
         int hourComparison = a.time.hour.compareTo(b.time.hour);
         if (hourComparison == 0) {
@@ -141,15 +143,16 @@ class _HomepageState extends State<Homepage> {
 
     // List of available tunes
     List<String> tunes = [
-      'assets/alarm1.mp3',
-      'assets/CHIMES.mp3',
-      'assets/Clock1.wav',
-      'assets/DigitalAlarm1.mp3',
-      'assets/DigitalAlarm2.mp3',
+      'alarm1.mp3',
+      'CHIMES.mp3',
+      'Clock1.mp3',
+      'Clock2.mp3',
+      'DigitalAlarm1.mp3',
+      'DigitalAlarm2.mp3',
     ];
 
     // Initialize selected tune
-    String selectedTune = tunes[0];
+    String selectedTune = tunes[1];
 
     showModalBottomSheet(
       context: context,
@@ -177,9 +180,11 @@ class _HomepageState extends State<Homepage> {
                             ),
                           ),
                           const SizedBox(height: 16),
+
+                          // Row for time picker
                           Row(
                             children: [
-// Display selected time
+                              // Display selected time
                               Text(
                                 displayedTime,
                                 style: GoogleFonts.mulish(
@@ -190,6 +195,8 @@ class _HomepageState extends State<Homepage> {
                                 ),
                               ),
                               Spacer(),
+
+                              // Button to select time
                               GestureDetector(
                                 onTap: () async {
                                   final TimeOfDay? picked =
@@ -228,6 +235,7 @@ class _HomepageState extends State<Homepage> {
                               ),
                             ],
                           ),
+
                           // Label text field
                           TextField(
                             decoration: InputDecoration(
@@ -246,13 +254,22 @@ class _HomepageState extends State<Homepage> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               Text(
-                                'Choose Tune -     ',
+                                'Choose Tune -',
                                 style: GoogleFonts.mulish(
                                   textStyle: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
                                   ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  _playPreview(selectedTune);
+                                },
+                                icon: Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.blue[300],
                                 ),
                               ),
 
@@ -265,7 +282,11 @@ class _HomepageState extends State<Homepage> {
                                   setModalState(() {
                                     selectedTune = newValue!;
                                   });
+                                  setState(() {
+                                    selectedTune = newValue!;
+                                  });
                                 },
+
                                 items: tunes.map<DropdownMenuItem<String>>(
                                     (String tune) {
                                   return DropdownMenuItem<String>(
@@ -415,6 +436,7 @@ class _HomepageState extends State<Homepage> {
                                   time: alarm.time,
                                   label: alarm.label,
                                   isSwitched: alarm.isSwitched,
+                                  tune: alarm.tune,
                                   onSwitchChanged: (isSwitched) {
                                     _updateAlarmSwitchState(index, isSwitched);
                                   },

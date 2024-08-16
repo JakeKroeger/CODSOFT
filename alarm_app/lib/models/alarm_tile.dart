@@ -11,12 +11,14 @@ class AlarmTile extends StatefulWidget {
   final String label;
   final bool isSwitched;
   final Function(bool) onSwitchChanged;
+  final String tune;
 
   AlarmTile({
     required this.time,
     required this.label,
     required this.isSwitched,
     required this.onSwitchChanged,
+    required this.tune,
   });
 
   @override
@@ -93,11 +95,12 @@ class _AlarmTileState extends State<AlarmTile> {
     }
 
     final alarmId = widget.label.hashCode;
+    print("THE SOUND OF THE ALARM IS: ${widget.tune}");
 
     final alarmSettings = AlarmSettings(
       id: alarmId,
       dateTime: alarmTime,
-      assetAudioPath: 'assets/Clock2.mp3',
+      assetAudioPath: 'assets/chimes.mp3',
       loopAudio: true,
       vibrate: true,
       volume: 0.8,
@@ -106,7 +109,7 @@ class _AlarmTileState extends State<AlarmTile> {
       notificationBody: widget.label,
       enableNotificationOnKill: Platform.isAndroid,
     );
-
+    print("alarm set with audio path: ${alarmSettings.assetAudioPath}");
     await Alarm.set(
       alarmSettings: alarmSettings,
     );
