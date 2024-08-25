@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:alarm_app/pages/stopwatch.dart';
+import 'package:alarm_app/pages/timer.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:alarm_app/models/alarm_tile.dart';
@@ -7,6 +9,37 @@ import 'package:flutter_spinner_time_picker/flutter_spinner_time_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:alarm_app/models/alarm.dart';
 import 'package:alarm/alarm.dart' as alarmPlugin;
+
+Widget _bottomNavItem({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: Color(0xffae6a08),
+          size: 30,
+        ),
+        SizedBox(height: 5),
+        Text(
+          label,
+          style: GoogleFonts.mulish(
+            textStyle: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
 class Homepage extends StatefulWidget {
   @override
@@ -33,7 +66,7 @@ class _HomepageState extends State<Homepage> {
     // Set the new preview
     previewPlaying = path;
 
-    await audioPlayer.play(AssetSource(path));
+    await audioPlayer.play(AssetSource(path.toLowerCase()));
   }
 
   bool _isLabelUnique(String label) {
@@ -94,7 +127,7 @@ class _HomepageState extends State<Homepage> {
     final alarmSettings = alarmPlugin.AlarmSettings(
       id: alarmId,
       dateTime: alarmTime,
-      assetAudioPath: 'assets/${alarm.tune}',
+      assetAudioPath: 'assets/${alarm.tune.toLowerCase()}',
       loopAudio: true,
       vibrate: true,
       volume: 0.8,
@@ -362,6 +395,239 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  void _deleteAlarm(String label) {
+    setState(() {
+      alarms.removeWhere((alarm) => alarm.label == label);
+    });
+  }
+
+  void _showEditAlarmDialog(Alarm alarm) {
+    TimeOfDay selectedTime = alarm.time;
+    String label = alarm.label;
+    String displayedTime = selectedTime.format(context);
+
+    // List of available tunes
+    List<String> tunes = [
+      'alarm1.mp3',
+      'CHIMES.mp3',
+      'Clock1.mp3',
+      'Clock2.mp3',
+      'DigitalAlarm1.mp3',
+      'DigitalAlarm2.mp3',
+    ];
+
+    // Initialize selected tune
+    String selectedTune = alarm.tune;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Container(
+                color: const Color(0xff171717),
+                child: Wrap(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Edit Alarm',
+                            style: GoogleFonts.mulish(
+                              textStyle: const TextStyle(
+                                  fontSize: 24, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Row for time picker
+                          Row(
+                            children: [
+                              // Display selected time
+                              Text(
+                                displayedTime,
+                                style: GoogleFonts.mulish(
+                                  textStyle: const TextStyle(
+                                    fontSize: 24,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              Spacer(),
+
+                              // Button to select time
+                              GestureDetector(
+                                onTap: () async {
+                                  final TimeOfDay? picked =
+                                      await showSpinnerTimePicker(
+                                    context,
+                                    initTime: selectedTime,
+                                    is24HourFormat: false,
+                                  );
+
+                                  if (picked != null) {
+                                    setModalState(() {
+                                      selectedTime = picked;
+                                      displayedTime =
+                                          selectedTime.format(context);
+                                    });
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xff9e610a),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Select Time',
+                                    style: GoogleFonts.mulish(
+                                      textStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Label text field
+                          TextField(
+                            controller: TextEditingController(text: label),
+                            decoration: InputDecoration(
+                              fillColor: Colors.white,
+                              labelText: 'Label',
+                              labelStyle: GoogleFonts.mulish(),
+                            ),
+                            style: const TextStyle(
+                                color: Colors.white), // Make typing white
+                            onChanged: (value) {
+                              label = value;
+                            },
+                          ),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                'Choose Tune -',
+                                style: GoogleFonts.mulish(
+                                  textStyle: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  _playPreview(selectedTune);
+                                },
+                                icon: Icon(
+                                  Icons.play_arrow,
+                                  color: Colors.blue[300],
+                                ),
+                              ),
+
+                              // Dropdown List of Tunes
+                              DropdownButton<String>(
+                                dropdownColor: const Color(
+                                    0xff000000), // Background color of the dropdown menu
+                                value: selectedTune,
+                                onChanged: (String? newValue) {
+                                  setModalState(() {
+                                    selectedTune = newValue!;
+                                  });
+                                  setState(() {
+                                    selectedTune = newValue!;
+                                  });
+                                },
+
+                                items: tunes.map<DropdownMenuItem<String>>(
+                                    (String tune) {
+                                  return DropdownMenuItem<String>(
+                                    value: tune,
+                                    child: Text(
+                                      tune
+                                          .split('/')
+                                          .last
+                                          .replaceAll('.mp3', ''),
+                                      style: GoogleFonts.mulish(
+                                        textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              SizedBox(width: 16),
+                            ],
+                          ),
+                          const SizedBox(height: 70),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // Delete button
+                              TextButton(
+                                onPressed: () {
+                                  _deleteAlarm(alarm.label);
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  'Delete',
+                                  style: GoogleFonts.mulish(
+                                    textStyle: const TextStyle(
+                                      color: Colors.red,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Update button
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Text(
+                                  'Update',
+                                  style: GoogleFonts.mulish(
+                                    textStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -389,6 +655,50 @@ class _HomepageState extends State<Homepage> {
               },
             ),
           ],
+        ),
+        bottomNavigationBar: BottomAppBar(
+          color: const Color(0xff171717),
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _bottomNavItem(
+                  icon: Icons.alarm,
+                  label: 'Alarm',
+                  onTap: () {
+                    // Navigate to Alarm page
+                  },
+                ),
+                _bottomNavItem(
+                  icon: Icons.timer,
+                  label: 'Timer',
+                  onTap: () {
+                    // Navigate to Timer page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TimerPage(),
+                      ),
+                    );
+                  },
+                ),
+                _bottomNavItem(
+                  icon: Icons.watch,
+                  label: 'Stopwatch',
+                  onTap: () {
+                    // Navigate to Stopwatch page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => StopwatchPage(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
         body: Container(
           decoration: const BoxDecoration(

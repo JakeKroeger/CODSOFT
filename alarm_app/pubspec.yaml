@@ -37,6 +37,7 @@ dependencies:
   alarm: ^3.1.4
   shared_preferences: ^2.0.8
   audioplayers: ^5.2.0
+  duration_picker: ^1.2.0
   
   
 

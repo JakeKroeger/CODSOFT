@@ -47,15 +47,6 @@ class _AlarmTileState extends State<AlarmTile> {
     subscription ??= Alarm.ringStream.stream.listen(
       (alarmSettings) => yourOnRingCallback(alarmSettings),
     );
-    _checkAlarms();
-  }
-
-  void _checkAlarms() async {
-    if (isSwitched) {
-      await _setAlarm();
-    } else {
-      await _cancelAlarm();
-    }
   }
 
   void _initializeTimezone() {
@@ -80,60 +71,10 @@ class _AlarmTileState extends State<AlarmTile> {
     );
   }
 
-  Future<void> _setAlarm() async {
-    final now = DateTime.now();
-    DateTime alarmTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      widget.time.hour,
-      widget.time.minute,
-    );
-
-    if (alarmTime.isBefore(now)) {
-      alarmTime = alarmTime.add(Duration(days: 1));
-    }
-
-    final alarmId = widget.label.hashCode;
-    print("THE SOUND OF THE ALARM IS: ${widget.tune}");
-
-    final alarmSettings = AlarmSettings(
-      id: alarmId,
-      dateTime: alarmTime,
-      assetAudioPath: 'assets/chimes.mp3',
-      loopAudio: true,
-      vibrate: true,
-      volume: 0.8,
-      fadeDuration: 3.0,
-      notificationTitle: widget.time.format(context),
-      notificationBody: widget.label,
-      enableNotificationOnKill: Platform.isAndroid,
-    );
-    print("alarm set with audio path: ${alarmSettings.assetAudioPath}");
-    await Alarm.set(
-      alarmSettings: alarmSettings,
-    );
-  }
-
-  Future<void> _cancelAlarm() async {
-    final alarmId = widget.label.hashCode;
-    try {
-      await Alarm.stop(alarmId);
-    } catch (e) {
-      print("Error cancelling alarm: $e");
-    }
-  }
-
   void toggleSwitch() {
     setState(() {
       isSwitched = !isSwitched;
     });
-
-    if (isSwitched) {
-      _setAlarm();
-    } else {
-      _cancelAlarm();
-    }
 
     widget.onSwitchChanged(isSwitched);
   }
@@ -148,8 +89,11 @@ class _AlarmTileState extends State<AlarmTile> {
         color: const Color(0xff171717),
       ),
       child: ListTile(
+        onTap: () {
+          showAboutDialog(context: context);
+        },
         title: Text(
-          widget.label,
+          '${widget.time.format(context)}',
           style: GoogleFonts.mulish(
               textStyle: const TextStyle(
                   color: Colors.white,
@@ -157,7 +101,7 @@ class _AlarmTileState extends State<AlarmTile> {
                   fontWeight: FontWeight.w800)),
         ),
         subtitle: Text(
-          '${widget.time.format(context)}',
+          widget.label,
           style: GoogleFonts.mulish(
               textStyle: const TextStyle(color: Colors.white, fontSize: 15)),
         ),
