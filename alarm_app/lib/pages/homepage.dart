@@ -47,7 +47,7 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  List<Alarm> alarms = [];
+  List<AlarmObject> alarms = [];
   AudioPlayer audioPlayer = AudioPlayer();
   String previewPlaying = ''; // Track which preview is currently playing
 
@@ -57,6 +57,7 @@ class _HomepageState extends State<Homepage> {
     _initializeAlarms();
   }
 
+  // Play the preview of the selected tune
   Future<void> _playPreview(String path) async {
     if (previewPlaying.isNotEmpty) {
       // Stop the currently playing preview
@@ -69,10 +70,12 @@ class _HomepageState extends State<Homepage> {
     await audioPlayer.play(AssetSource(path.toLowerCase()));
   }
 
+  // Check if the label is unique
   bool _isLabelUnique(String label) {
     return alarms.every((alarm) => alarm.label != label);
   }
 
+  // Initialize the alarms
   void _initializeAlarms() {
     for (var alarm in alarms) {
       if (alarm.isSwitched) {
@@ -83,9 +86,10 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
+  // Update the state of an alarm switch
   void _updateAlarmSwitchState(int index, bool isSwitched) {
     setState(() {
-      alarms[index] = Alarm(
+      alarms[index] = AlarmObject(
         time: alarms[index].time,
         label: alarms[index].label,
         isSwitched: isSwitched,
@@ -99,7 +103,8 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
-  Future<void> _cancelAlarm(Alarm alarm) async {
+  // Cancel an alarm
+  Future<void> _cancelAlarm(AlarmObject alarm) async {
     final alarmId = alarm.label.hashCode;
     try {
       await alarmPlugin.Alarm.stop(alarmId);
@@ -108,7 +113,8 @@ class _HomepageState extends State<Homepage> {
     }
   }
 
-  Future<void> _setAlarm(Alarm alarm) async {
+  // Set an alarm
+  Future<void> _setAlarm(AlarmObject alarm) async {
     final now = DateTime.now();
     DateTime alarmTime = DateTime(
       now.year,
@@ -142,6 +148,7 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  // Add an alarm
   void _addAlarm(TimeOfDay time, String label, String tune) {
     if (label.isEmpty || !_isLabelUnique(label)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,8 +164,8 @@ class _HomepageState extends State<Homepage> {
     }
 
     setState(() {
-      alarms
-          .add(Alarm(time: time, label: label, isSwitched: false, tune: tune));
+      alarms.add(
+          AlarmObject(time: time, label: label, isSwitched: false, tune: tune));
       alarms.sort((a, b) {
         int hourComparison = a.time.hour.compareTo(b.time.hour);
         if (hourComparison == 0) {
@@ -169,6 +176,7 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  // Show the dialog to add an alarm
   void _showAddAlarmDialog() {
     TimeOfDay selectedTime = TimeOfDay.now();
     String label = '';
@@ -395,13 +403,36 @@ class _HomepageState extends State<Homepage> {
     );
   }
 
+  // Delete an alarm
   void _deleteAlarm(String label) {
     setState(() {
-      alarms.removeWhere((alarm) => alarm.label == label);
+      final alarmToDelete = alarms.firstWhere((alarm) => alarm.label == label);
+      alarmPlugin.Alarm.stop(alarmToDelete.label.hashCode);
+      alarms.remove(alarmToDelete);
     });
   }
 
-  void _showEditAlarmDialog(Alarm alarm) {
+  void updateAlarm(
+      String oldLabel, TimeOfDay newTime, String newLabel, String newTune) {
+    setState(() {
+      final alarmIndex = alarms.indexWhere((alarm) => alarm.label == oldLabel);
+      alarmPlugin.Alarm.stop(alarms[alarmIndex].label.hashCode);
+      if (alarmIndex != -1) {
+        alarms[alarmIndex] = AlarmObject(
+          time: newTime,
+          label: newLabel,
+          isSwitched: alarms[alarmIndex].isSwitched,
+          tune: newTune,
+        );
+        if (alarms[alarmIndex].isSwitched) {
+          _setAlarm(alarms[alarmIndex]);
+        }
+      }
+    });
+  }
+
+  // Show the dialog to edit an alarm
+  void _showEditAlarmDialog(AlarmObject alarm) {
     TimeOfDay selectedTime = alarm.time;
     String label = alarm.label;
     String displayedTime = selectedTime.format(context);
@@ -600,6 +631,8 @@ class _HomepageState extends State<Homepage> {
                               // Update button
                               TextButton(
                                 onPressed: () {
+                                  updateAlarm(alarm.label, selectedTime, label,
+                                      selectedTune);
                                   Navigator.of(context).pop();
                                 },
                                 child: Text(
@@ -633,6 +666,8 @@ class _HomepageState extends State<Homepage> {
     return Container(
       child: Scaffold(
         backgroundColor: const Color(0xff12043e),
+
+        // App Bar
         appBar: AppBar(
           title: Text(
             'Alarm',
@@ -656,6 +691,8 @@ class _HomepageState extends State<Homepage> {
             ),
           ],
         ),
+
+        // Bottom Navigation Bar
         bottomNavigationBar: BottomAppBar(
           color: const Color(0xff171717),
           child: Padding(
@@ -700,6 +737,8 @@ class _HomepageState extends State<Homepage> {
             ),
           ),
         ),
+
+        // Body
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -743,8 +782,11 @@ class _HomepageState extends State<Homepage> {
                               itemBuilder: (context, index) {
                                 final alarm = alarms[index];
                                 return AlarmTile(
+                                  alarm: alarms[index],
                                   time: alarm.time,
                                   label: alarm.label,
+                                  OnEditAlarm: () =>
+                                      _showEditAlarmDialog(alarm),
                                   isSwitched: alarm.isSwitched,
                                   tune: alarm.tune,
                                   onSwitchChanged: (isSwitched) {

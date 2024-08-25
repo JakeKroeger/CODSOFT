@@ -5,20 +5,25 @@ import 'package:alarm_app/pages/alarm_notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:alarm_app/models/alarm.dart';
 
 class AlarmTile extends StatefulWidget {
+  final AlarmObject alarm;
   final TimeOfDay time;
   final String label;
   final bool isSwitched;
   final Function(bool) onSwitchChanged;
   final String tune;
+  final VoidCallback OnEditAlarm;
 
   AlarmTile({
+    required this.alarm,
     required this.time,
     required this.label,
     required this.isSwitched,
     required this.onSwitchChanged,
     required this.tune,
+    required this.OnEditAlarm,
   });
 
   @override
@@ -88,9 +93,11 @@ class _AlarmTileState extends State<AlarmTile> {
         borderRadius: BorderRadius.circular(10),
         color: const Color(0xff171717),
       ),
+
+      // ListTile is used to display the time, label, and switch
       child: ListTile(
         onTap: () {
-          showAboutDialog(context: context);
+          widget.OnEditAlarm();
         },
         title: Text(
           '${widget.time.format(context)}',
